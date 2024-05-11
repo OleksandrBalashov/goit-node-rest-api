@@ -5,7 +5,8 @@ import checkEmptyBody from "../middlewares/checkEmptyBody.js";
 import {
   createContactSchema,
   updateContactSchema,
-} from "../schemas/contactsSchemas.js";
+  updateStatusSchema,
+} from "../schemas/contactsSchema.js";
 
 const contactsRouter = express.Router();
 
@@ -26,6 +27,13 @@ contactsRouter.put(
   checkEmptyBody,
   validateBody(updateContactSchema),
   ctrlContacts.updateContact
+);
+
+contactsRouter.patch(
+  "/:id/favorite",
+  checkEmptyBody,
+  validateBody(updateStatusSchema),
+  ctrlContacts.updateStatusContact
 );
 
 export default contactsRouter;
