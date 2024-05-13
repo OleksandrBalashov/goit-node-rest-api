@@ -57,13 +57,13 @@ const updateStatusContact = async (req, res) => {
     body,
   } = req;
 
-  const updasteStatus = await contactsService.updateContact(id, body);
+  const updatedContact = await contactsService.updateContact(id, body);
 
   if (!updatedContact) {
     throw HttpError(404, "Not found");
   }
 
-  res.json(updasteStatus);
+  res.json(updatedContact);
 };
 
 export default {
