@@ -14,15 +14,15 @@ const signup = async (req, res) => {
 
   const newUser = await usersServices.createUser(req.body);
 
-  res
-    .status(201)
-    .json({ email: newUser.email, subscription: newUser.subscription });
+  res.status(201).json({
+    user: { email: newUser.email, subscription: newUser.subscription },
+  });
 };
 
 const login = async (req, res) => {
   const { email, password } = req.body;
   const user = await usersServices.findUser({ email });
-  const isComparePassword = compareHash(password, user?.password);
+  const isComparePassword = await compareHash(password, user?.password);
 
   if (!user || !isComparePassword) {
     throw HttpError(401, "Email or password is wrong");
