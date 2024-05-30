@@ -84,6 +84,11 @@ const updateSubscription = async (req, res) => {
 
 const updateAvatar = async (req, res) => {
   const { _id } = req.user;
+
+  if (!req.file) {
+    throw HttpError(404, "Image file is required");
+  }
+
   const { path: oldPath, filename } = req.file;
 
   const avatarsPath = path.resolve("public", "avatars");
