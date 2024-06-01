@@ -1,5 +1,6 @@
 import path from "path";
 import fs from "fs/promises";
+import { nanoid } from "nanoid";
 import ctrlWrapper from "../decorators/ctrlWrapper.js";
 import HttpError from "../helpers/HttpError.js";
 import compareHash from "../helpers/compareHash.js";
@@ -7,6 +8,8 @@ import { createToken } from "../helpers/jwt.js";
 import * as usersServices from "../services/usersServices.js";
 import gravatar from "gravatar";
 import resizeAvatar from "../helpers/resizeAvatar.js";
+import sendEmail from "../helpers/emailSend.js";
+import { verifyEmailTemplate } from "../helpers/emailTemplates.js";
 
 const signup = async (req, res) => {
   const { email } = req.body;
@@ -22,15 +25,65 @@ const signup = async (req, res) => {
     format: "qr",
   });
 
-  const newUser = await usersServices.createUser({ ...req.body, avatarURL });
+  const verificationToken = nanoid();
+
+  const newUser = await usersServices.createUser({
+    ...req.body,
+    avatarURL,
+    verificationToken,
+    verify: false,
+  });
+
+  sendEmail(verifyEmailTemplate(email, verificationToken)).then(() =>
+    console.log("Email has been sent")
+  );
 
   res.status(201).json({
     user: {
       email: newUser.email,
       subscription: newUser.subscription,
       avatarURL,
+      verificationToken,
+      verify: false,
     },
   });
+};
+
+const verify = async (req, res) => {
+  const { verificationToken } = req.params;
+
+  const user = await usersServices.findUser({ verificationToken });
+
+  if (!user || user.verify) {
+    throw HttpError(404, "User not found");
+  }
+
+  await usersServices.updateUser(
+    { _id: user.id },
+    { verify: true, verificationToken: "" }
+  );
+
+  res.json({ message: "Verification successful" });
+};
+
+const resendVerify = async (req, res) => {
+  const { email } = req.body;
+
+  const user = await usersServices.findUser({ email });
+
+  if (!user) {
+    throw HttpError(404, "User not found");
+  }
+
+  if (user.verify) {
+    throw HttpError(400, "Verification has already been passed");
+  }
+
+  sendEmail(verifyEmailTemplate(email, user.verificationToken)).then(() =>
+    console.log("Email has been sent")
+  );
+
+  res.json({ message: "Verification email sent" });
 };
 
 const login = async (req, res) => {
@@ -42,6 +95,10 @@ const login = async (req, res) => {
     throw HttpError(401, "Email or password is wrong");
   }
 
+  if (!user.verify) {
+    throw HttpError(401, "Email not verify");
+  }
+  1;
   const { _id, subscription } = user;
 
   const token = createToken({ _id });
@@ -113,4 +170,6 @@ export default {
   current: ctrlWrapper(current),
   updateSubscription: ctrlWrapper(updateSubscription),
   updateAvatar: ctrlWrapper(updateAvatar),
+  verify: ctrlWrapper(verify),
+  resendVerify: ctrlWrapper(resendVerify),
 };

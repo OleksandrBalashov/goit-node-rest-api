@@ -1,7 +1,8 @@
 import express from "express";
 import checkEmptyBody from "../middlewares/checkEmptyBody.js";
 import validateBody from "../middlewares/validateBody.js";
-import { userSignupSchema } from "../schemas/usersSchema.js";
+import checkEmail from "../middlewares/checkEmail.js";
+import { userSignupSchema, usersVerifySchema } from "../schemas/usersSchema.js";
 import usersCtrl from "../controllers/usersControllers.js";
 import authenticate from "../middlewares/authenticate.js";
 import { updateSubscriptionSchema } from "../schemas/contactsSchema.js";
@@ -15,6 +16,10 @@ usersRouter.post(
   validateBody(userSignupSchema),
   usersCtrl.signup
 );
+
+usersRouter.get("/verify/:verificationToken", usersCtrl.verify);
+
+usersRouter.post("/verify", checkEmail, usersCtrl.resendVerify);
 
 usersRouter.post(
   "/login",
